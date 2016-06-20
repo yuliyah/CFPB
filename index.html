@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>CFPB Complaints Dashboard</title>
+<meta charset="UTF-8">
+<meta content='width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0' name='viewport'>
+
+
+<style>
+  .dc-chart {
+    margin-top: 15px;
+    margin-left: 35px;
+}
+
+.dc-chart rect.bar {
+    stroke: none;
+    fill: #BC99DF;
+    fill-opacity: .75;
+}
+
+.dc-chart rect.bar:hover {
+    fill-opacity: .5;
+}
+  
+  .dc-chart rect.deselected {
+    stroke: none;
+    fill: #ccc;
+}
+ 
+  .dc-chart .pie-slice {
+    fill: white;
+    font-size: 12px;
+    font-weight:bold;
+    cursor: pointer;
+}
+
+
+  
+.dc-chart .pie-slice :hover{
+    fill-opacity: .8;
+  
+}
+
+  .dc-chart .selected path{
+    stroke-width: 3;
+    stroke: #ccc;
+    fill-opacity: 1;
+}
+  .dc-chart .deselected path{
+    stroke-width: 3;
+    stroke: #ccc;
+    fill-opacity: .5;
+    fill: #ccc;
+}
+  
+.dc-chart .axis path, .axis line {
+    fill: none;
+    stroke: #000;
+    shape-rendering: crispEdges;
+}
+
+.dc-chart .axis text {
+    font: 7 px sans-serif;
+}
+
+.dc-chart .grid-line line {
+    fill: none;
+    stroke: #ccc;
+    opacity: .5;
+    shape-rendering: crispEdges;
+}
+
+    h4 span {
+      font-size:14px;
+      font-weight:normal;
+      }
+   
+    h2 span {
+      font-size:14px;
+      font-weight:normal;
+      }
+	.dc-chart g.row text {
+	  fill: black;
+	  font-size: 10px;
+	}
+	label {
+	  font: bold 12px sans-serif;
+	}
+</style>
+</head>
+<body>
+<div class='container' id='main-container'>
+<div class='content'>
+<div class='container' style='font: 12px verdana;'>
+  <div class="dc-data-count" >
+    <h1> 2016 CFPB Consumer Complaints
+      <span>
+        <span class="filter-count"></span>
+         selected out of 
+        <span class="total-count"></span>
+         records | 
+        <a href="javascript:dc.filterAll(); dc.renderAll();">Reset All</a>
+      </span>
+    </h1>
+  </div>
+    <div class='row'>
+  <div class='span6' id="dc-product-chart">
+      <h4>
+		 Number of Consumer Complaints by Financial Product
+	  </h4>
+  </div>
+  <div class='span6' id="dc-state-chart">
+      
+      <h4>
+        Number of Consumer Complaints by State
+      </h4>
+    </div>   
+  </div>
+<div class='row'>
+  <div class='span12' id="dc-submitted-chart">
+      <h4>
+		How Complaints were Submitted?
+        
+	  </h4>
+    </div>
+  </div>
+
+	
+	<div class='row'>
+		<div class='col-xs-12'>
+			<h3>Data Table</h3>
+				<table class='table table-hover' id='dc-table-chart'>
+					<thead>
+						<tr class='header'>
+							<th>Company</th>
+							<th>Product</th>
+							<th>Sub Product</th>
+							<th>Customer Complaint Narrative</th>
+						</tr>
+					</thead>
+				</table>
+		</div>
+	</div>
+</div>
+</div>
+</div>
+
+ <script type="text/javascript" src="https://d3js.org/d3.v3.min.js" charset="utf-8"></script>
+
+    
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/crossfilter/1.3.12/crossfilter.min.js"></script>
+  <script type="text/javascript"  src="
+https://cdnjs.cloudflare.com/ajax/libs/dc/2.0.0-beta.29/dc.css"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/dc/2.0.0-beta.29/dc.js"></script>
+ <script type="text/javascript"  src="
+https://cdnjs.cloudflare.com/ajax/libs/dc/2.0.0-beta.29/dc.css"></script>
+  
+  <script type="text/javascript"  src="https://cdnjs.cloudflare.com/ajax/libs/dc/2.0.0-beta.29/dc.js.map"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.2/jquery.min.js"></script>
+  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js"></script>
+  
+  
+<script type="text/javascript" src='https://cdnjs.cloudflare.com/ajax/libs/datatables/1.10.12/js/jquery.dataTables.min.js'></script>
+
+<script type="text/javascript">
+
+//var dataCount = dc.dataCount(".dc-data-count");
+var datatable = $('#dc-table-chart');
+
+
+ d3.csv("consumer_complaints2016.csv", function(error, data) {
+  if (error) throw error;
+        
+        data.forEach(function (d) {
+          
+          
+     
+          d.date = new Date(d.date_received);
+         d.years = d3.time.format("%Y")(d.date);
+          
+         
+});
+      
+var mydata = crossfilter(data);
+var all = mydata.groupAll();
+      
+var dataCount =   dc.dataCount(".dc-data-count")
+   .dimension(mydata)
+    .group(all);
+        
+        
+var state = mydata.dimension(function(d) { return d.state; });
+ state.top(Infinity);
+      
+var product = mydata.dimension(function(d) {return d.product;});
+     
+var company = mydata.dimension(function(d) { return d.company; });
+company.top(Infinity);
+    
+var month = mydata.dimension(function (d) {return d3.time.month(d.date);});
+      
+   
+var year = mydata.dimension(function (d) {return d.years;});
+      
+var response = mydata.dimension(function (d) {return d.company_response_to_consumer;});
+   
+var submitted = mydata.dimension(function (d) {return d.submitted_via;});
+      
+   
+var VolumeByState = state.group().reduceCount(function (d) {return d.complaint_id;});
+                                          
+    
+var VolumeByCompany = company.group().reduceCount(function (d) {return d.complaint_id;});
+         
+    
+var VolumeByProduct = product.group().reduceCount(function (d) {return d.complaint_id;}); 
+      
+   
+      
+var VolumeByMonthGroup = month.group().reduceSum(function(d) { return d.complaint_id; });
+   
+      
+      
+var VolumeByYear = year.group().reduceCount(function(d) { return d.complaint_id; });
+      
+var CompanyProduct = product.group();
+      
+var VolumeByCompanyProduct = CompanyProduct.reduceCount(function (d) {return d.complaint_id; });
+      
+var VolumeByResponse = response.group().reduceCount(function (d) {return d.complaint_id; });
+   
+var VolumeBySubmitted = submitted.group().reduceCount(function (d) { return d.complaint_id; });
+     
+var productChart = dc.barChart("#dc-product-chart");
+    
+      
+productChart.width(1400)
+        .height (300)
+        .margins({top: 10, right: 20, bottom: 30, left: 60})
+        .dimension(product)
+        .group(VolumeByProduct)
+        .transitionDuration(1500)
+        .gap(5)       
+        .x(d3.scale.ordinal()   
+          .domain(data.map(function(d) { return d.product; })))
+        .xUnits(dc.units.ordinal)
+        .elasticY(true)
+          
+           
+      var stateChart = dc.barChart("#dc-state-chart");
+      
+      stateChart.width(1350)
+        .height (200)
+        .margins({top: 10, right: 50, bottom: 30, left: 60})
+        .dimension(state)
+        .group(VolumeByState)
+        .transitionDuration(1500)
+        .gap(3)       
+        .x(d3.scale.ordinal()   
+          .domain(data.map(function(d) { return d.state; })))
+        .xUnits(dc.units.ordinal)
+        .elasticY(true);
+         
+   var submittedChart = dc.pieChart("#dc-submitted-chart")
+  .width(400)
+  .height(410)
+  .transitionDuration(500) 
+  .radius(200)
+  .innerRadius(50)
+  .dimension(submitted)
+  .group(VolumeBySubmitted)
+  .label(function(d) { return d.key + "  (" + Math.floor(d.value / all.value() * 100) + "%)"; })
+  .renderLabel(true)
+  
+      
+ var tableDimension = mydata.dimension(function (d) { return d.company.toLowerCase() + ' ' +
+													d.product.toLowerCase() + ' ' +
+													d.sub_product.toLowerCase() + ' ' +
+													           d.consumer_complaint_narrative.toLowerCase()
+                                                               ;});
+	
+	
+	var dataTableOptions = {
+        "bSort": true,
+		columnDefs: [
+			{
+				targets: 0,
+				data: function (d) { return d.company; },
+				defaultContent: ''
+			},
+			{
+				targets: 1,
+				data: function (d) { return d.product; },
+				defaultContent: ''
+			},
+			{
+				targets: 2,
+				data: function (d) { return d.sub_product; },
+				defaultContent: ''
+			},
+			{
+				targets: 3,
+				data: function (d) { return d.consumer_complaint_narrative;},
+				defaultContent: ''
+			}		
+		]
+	};
+	
+
+	datatable.dataTable(dataTableOptions);
+	
+	function format ( d ) {
+		return '<b>Company: </b>' + d.company;
+	}
+	
+	datatable.DataTable().on('click', 'tr[role="row"]', function () {
+        var tr = $(this);
+        var row = datatable.DataTable().row( tr );
+ 
+        if ( row.child.isShown() ) {
+            row.child.hide();
+            tr.removeClass('shown');
+        }
+        else {
+            row.child( format(row.data()) ).show();
+            tr.addClass('shown');
+        }
+    } );
+	
+	
+	function RefreshTable() {
+            dc.events.trigger(function () {
+                alldata = tableDimension.top(Infinity);
+                datatable.fnClearTable();
+                datatable.fnAddData(alldata);
+                datatable.fnDraw();
+            });
+        }
+	
+	
+	for (var i = 0; i < dc.chartRegistry.list().length; i++) {
+		var chartI = dc.chartRegistry.list()[i];
+		chartI.on("filtered", RefreshTable);
+	}
+	
+	
+	 $(":input").on('keyup',function(e){
+       if (e.keyCode == 13) {
+		text_filter(tableDimension, this.value)};
+       
+	function text_filter(dim,q){
+		 if (q!='') {
+			dim.filter(function(d){
+				return d.indexOf (q.toLowerCase()) !== -1;
+			});
+		} else {
+			dim.filterAll();
+			}
+		RefreshTable();
+		dc.redrawAll();}
+	});
+	
+	
+	
+	RefreshTable();
+
+	dc.renderAll();
+   
+ 
+
+});
+</script>
+</body>
+</html>
